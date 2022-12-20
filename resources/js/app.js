@@ -7,7 +7,7 @@ let cartCounter = document.querySelector('#cartCounter')
 function updateCart(pizza) {
    axios.post('/update-cart', pizza).then(res => {
     console.log('All Done Till app.js'); 
-    // cartCounter.innerText = res.data.totalqty; 
+    cartCounter.innerText = res.data.totalqty; 
        new Noty({
            type: 'success',
            timeout: 1000,

@@ -2,6 +2,7 @@ const menus = require('../app/model/menus');
 const user = require('../app/model/user');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
+const guest = require('./middleware/guest')
 
 const allroutes = (app)=>{
 
@@ -23,9 +24,14 @@ const allroutes = (app)=>{
 
 
 
-
-    app.get('/login', (req, res) => {
+    app.get('/login',guest,(req, res) => {
         res.render('auth/login')
+    })
+
+    app.post('/logout',(req,res)=>{
+        req.logout((err)=>{
+            return res.redirect('/login');
+        })
     })
 
     app.post('/login', (req, res,next) => {
@@ -57,7 +63,7 @@ const allroutes = (app)=>{
 
 
 
-    app.get('/register', (req, res) => {
+    app.get('/register',guest,(req, res) => {
         
         res.render('auth/register');
     })
