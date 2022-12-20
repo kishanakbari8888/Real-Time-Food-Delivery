@@ -46,10 +46,10 @@ app.use(passport.session())
 
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 app.use((req,res,next)=>{
-    console.log(req.session);
+    // console.log(req.session);
     res.locals.session = req.session;
-    console.log('---');
-    console.log(req.user);
+    // console.log('---');
+    // console.log(req.user);
     res.locals.user = req.user;
     next();
 })

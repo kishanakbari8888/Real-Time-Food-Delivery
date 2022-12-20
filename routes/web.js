@@ -2,7 +2,12 @@ const menus = require('../app/model/menus');
 const user = require('../app/model/user');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
-const guest = require('./middleware/guest')
+const {guest,auth, admincheck} = require('./middleware/guest');
+const order = require('../app/model/orders');
+const flash = require('express-flash');
+const moment = require('moment');
+const { populate } = require('../app/model/menus');
+const orders = require('../app/model/orders');
 
 const allroutes = (app)=>{
 
@@ -17,7 +22,7 @@ const allroutes = (app)=>{
 
 
 
-    app.get('/cart', (req, res,nex) => {
+    app.get('/cart',auth, (req, res,nex) => {
         res.render('customers/cart')
     })
 
@@ -41,6 +46,7 @@ const allroutes = (app)=>{
                 req.flash('error', 'All fields are required')
                 return res.redirect('/login')
             }
+
             passport.authenticate('local', (err, user, info) => {
                 if(err) {
                     req.flash('error', info.message )
@@ -56,7 +62,13 @@ const allroutes = (app)=>{
                         return next(err)
                     }
 
-                    return res.redirect('/');
+                    if(req.user.role=='admin'){
+                        return res.redirect('/admin/orders');
+                    }
+                    else{
+                        return res.redirect('/');
+                    }
+
                 })
             })(req, res, next)
     })
@@ -117,7 +129,6 @@ const allroutes = (app)=>{
         }
 
         const result = await use.save();
-        console.log('you data is saved');
 
         return res.redirect('/');
         
@@ -127,7 +138,6 @@ const allroutes = (app)=>{
 
     app.post('/update-cart',(req,res)=>{
         
-        // console.log(req.body );
 
         if(!req.session.cart)
         {
@@ -151,13 +161,53 @@ const allroutes = (app)=>{
 
         cart.totalprice += req.body.price;
         cart.totalqty++;
-        console.log(cart);
         
 
         return res.json(cart);
  
     })
 
+    app.post('/orders',async (req,res)=>{
+
+        const {phone,address} = req.body;
+        if(!phone || !address){
+            req.flash('error','All fields are required');
+            return res.redirect('/cart');
+
+        }
+
+        const orde = new order({
+            customerId:req.user._id,
+            items:req.session.cart.item,
+            phone:phone,
+            address:address
+        }) 
+
+        const result = await orde.save();
+        req.flash('success','Order placed successfully');
+        delete req.session.cart;
+        res.redirect('/order');
+    })
+
+    app.get('/order',auth,async (req,res)=>{
+
+        const orders = await order.find({customerId:req.user._id},null,{sort:{'createdAt':-1}});
+        res.render('customers/orders',{orders:orders,moment:moment});
+    })
+
+    app.get('/admin/orders',admincheck ,async (req,res)=>{
+        order.find({status:{$ne:'competed'}},null,{sort:{'createdAt':-1}}).populate
+        ('customerId','-password').exec((err,orde)=>{
+            console.log(orde)
+            if(req.xhr){
+                return res.json(orde);
+            }
+            res.render('admin/orders');
+        })
+
+
+
+    })
 
 }
 

@@ -7,5 +7,23 @@ const guest = (req,res,next)=>{
     next();
 }
 
+const auth = (req,res,next)=>{
+    if(!req.user){
+        return res.redirect('/login');
+    }
 
-module.exports = guest;
+    next();
+}
+
+
+const admincheck = (req,res,next)=>{
+    if(req.user && req.user.role==='admin'){
+        return next();
+    }
+
+    return res.redirect('/');
+}
+
+
+
+module.exports = {guest,auth,admincheck};
