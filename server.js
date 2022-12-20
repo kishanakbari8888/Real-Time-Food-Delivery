@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const flash = require('express-flash');
 const MongoStore = require('connect-mongo');
-
+const passport = require('passport');
 // ----------------------------------------------------------------------------------------------------
 mongoose.set("strictQuery", false);
 DB_URL = "mongodb+srv://nodedemo:nodedemo@nodecazzy.zasfn3a.mongodb.net/Pizza?retryWrites=true&w=majority"
@@ -20,6 +20,7 @@ const mongoStore = MongoStore.create({
     collectionName: "sessions",
   });
 app.use(express.json());
+app.use(express.urlencoded({extended:false}));
 app.use(express.static('public'));
 app.use(expressLayout);
 app.use(session({
@@ -33,12 +34,25 @@ app.use(session({
 app.use(flash());
 app.set('views', __dirname+'/resources/views');
 app.set('view engine','ejs');
+
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+const passportInit = require('./app/config/passport')
+passportInit(passport)
+app.use(passport.initialize())
+app.use(passport.session())
+
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 app.use((req,res,next)=>{
+    console.log(req.session);
     res.locals.session = req.session;
+    console.log('---');
+    console.log(req.user);
+    res.locals.user = req.user;
     next();
 })
-
-
 
 // ----------------------------------------------------------------------------------------------------
 
