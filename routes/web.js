@@ -8,7 +8,6 @@ const flash = require('express-flash');
 const moment = require('moment');
 const { populate } = require('../app/model/menus');
 const orders = require('../app/model/orders');
-
 const allroutes = (app)=>{
 
 
@@ -99,7 +98,7 @@ const allroutes = (app)=>{
             req.flash('error','All fields are requied')
             req.flash('name',name);
             req.flash('email',email);
-            
+                
             return res.redirect('/register');
         }
         
@@ -184,9 +183,17 @@ const allroutes = (app)=>{
         }) 
 
         const result = await orde.save();
-        req.flash('success','Order placed successfully');
-        delete req.session.cart;
-        res.redirect('/order');
+        order.populate(result,{path:'customeId'}, (err,placedorder)=>{
+            
+            req.flash('success','Order placed successfully');
+            delete req.session.cart;
+    
+            const eventEmitter = app.get('eventEmitter');
+            eventEmitter.emit('orderPlaced',result);
+
+        });
+
+        return res.redirect('/order');
     })
 
     app.get('/order',auth,async (req,res)=>{
@@ -198,14 +205,36 @@ const allroutes = (app)=>{
     app.get('/admin/orders',admincheck ,async (req,res)=>{
         order.find({status:{$ne:'competed'}},null,{sort:{'createdAt':-1}}).populate
         ('customerId','-password').exec((err,orde)=>{
-            console.log(orde)
+            // console.log(orde)
             if(req.xhr){
                 return res.json(orde);
             }
             res.render('admin/orders');
         })
+    })
 
+    app.post('/admin/order/status',async (req,res)=>{
 
+        // console.log(req.body);
+        const data = await orders.updateOne({_id:req.body.orderId},{status:req.body.status});
+        // console.log(data);
+        const eventEmitter = app.get('eventEmitter');
+        eventEmitter.emit('orderUpdate',{id:req.body.orderId,status:req.body.status});
+
+        res.redirect('/admin/orders');
+    })
+
+    app.get('/customer/orders/:id',async (req,res)=>{
+        const orde = await order.findById(req.params.id);
+
+        // console.log(req.user._id);
+        // console.log(orde);
+        // console.log('#######################');
+        if(req.user._id.toString()===orde.customerId.toString()){
+            return res.render('customers/singleorders',{order:orde});
+        }
+        
+        return res.redirect('/');
 
     })
 

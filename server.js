@@ -8,6 +8,8 @@ const session = require('express-session');
 const flash = require('express-flash');
 const MongoStore = require('connect-mongo');
 const passport = require('passport');
+const Emitter = require('events');
+
 // ----------------------------------------------------------------------------------------------------
 mongoose.set("strictQuery", false);
 DB_URL = "mongodb+srv://nodedemo:nodedemo@nodecazzy.zasfn3a.mongodb.net/Pizza?retryWrites=true&w=majority"
@@ -34,8 +36,8 @@ app.use(session({
 app.use(flash());
 app.set('views', __dirname+'/resources/views');
 app.set('view engine','ejs');
-
-
+const eventEmitter = new Emitter();
+app.set('eventEmitter',eventEmitter);
 // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 const passportInit = require('./app/config/passport')
@@ -61,13 +63,32 @@ allroutes(app);
 
 
 // ----------------------------------------------------------------------------------------------------
-
 mongoose.connect(DB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
 .then((result) =>{
-    app.listen(PORT,()=>{
-        console.log('here we go ${app_port}');
-    })
+    console.log('Database connected....')
 }
 ).catch((err) => console.log(err));
+// ------------------------------------------------------------------------------------------------
+const server = app.listen(PORT,()=>{
+    console.log('here we go ${app_port}');
+})
+// --------------------------------shocket--------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------------------------------
+
+const io = require('socket.io')(server);
+io.on('connection',(socket)=>{
+    socket.on('join',(room1)=>{
+        console.log(room1);
+        socket.join(room1);
+    })
+
+})
+
+eventEmitter.on('orderUpdate',(data)=>{
+    io.to(`order_${data.id}`).emit('orderUpdate',data);
+})
+
+
+eventEmitter.on('orderPlaced',(data)=>{
+    io.to('adminRoom').emit('orderPlaced',data);
+})

@@ -8,7 +8,7 @@ let cartCounter = document.querySelector('#cartCounter')
 
 function updateCart(pizza) {
    axios.post('/update-cart', pizza).then(res => {
-    console.log('All Done Till app.js'); 
+    // console.log('All Done Till app.js'); 
     cartCounter.innerText = res.data.totalqty; 
        new Noty({
            type: 'success',
@@ -29,7 +29,7 @@ function updateCart(pizza) {
 addToCart.forEach((btn) => {
    btn.addEventListener('click', (e) => {
        let pizza = JSON.parse(btn.dataset.pizza)
-       console.log(pizza);
+    //    console.log(pizza);
        updateCart(pizza)
    })
 })
@@ -113,17 +113,91 @@ function initAdmin() {
         }
     }).then((res) => {
         orders = res.data
-        console.log('[[[[');
-        console.log(res.data);
+        // console.log('[[[[');
+        // console.log(res.data);
         markup = generateMarkup(orders)
-        console.log(markup);
+        // console.log(markup);
         orderTableBody.innerHTML = markup
     }).catch(err => {
         console.log(err)
     })
-
+    
+    socket.on('orderPlaced', (order) => {
+        // console.log('---------------------------------------');
+        new Noty({
+            type: 'success',
+            timeout: 1000,
+            text: 'New order!',
+            progressBar: false,
+        }).show(); 
+        orders.unshift(order)
+        console.log(order);
+        orderTableBody.innerHTML = ''
+        orderTableBody.innerHTML = generateMarkup(orders)
+    })
 
 
 }
 // #########################################################################################################
-initAdmin();
+
+let statuses = document.querySelectorAll('.status_line')
+let hiddenInput = document.querySelector('#hiddenInput')
+let order = hiddenInput ? hiddenInput.value : null
+order = JSON.parse(order)
+let time = document.createElement('small')
+
+function updateStatus(order) {
+    statuses.forEach((status) => {
+        status.classList.remove('step-completed')
+        status.classList.remove('current')
+    })
+    let stepCompleted = true;
+    statuses.forEach((status) => {
+       let dataProp = status.dataset.status 
+       if(stepCompleted) {
+            status.classList.add('step-completed')
+       }
+       if(dataProp === order.status) {
+            stepCompleted = false
+            time.innerText = moment(order.updatedAt).format('hh:mm A')
+            status.appendChild(time)
+           if(status.nextElementSibling) {
+            status.nextElementSibling.classList.add('current')
+           }
+       }
+    })
+
+}
+
+updateStatus(order);
+
+
+//socket
+
+let socket = io();
+if(order){
+    socket.emit('join', `order_${order._id}`); 
+}
+
+// ========================admin============================
+
+let adminAreaPath = window.location.pathname
+if(adminAreaPath.includes('admin')) {
+    initAdmin(socket)
+    socket.emit('join', 'adminRoom')
+}
+
+// =========================================================
+
+socket.on('orderUpdate', (data) => {
+    const updatedOrder = { ...order }
+    updatedOrder.updatedAt = moment().format()
+    updatedOrder.status = data.status
+    updateStatus(updatedOrder)
+    new Noty({
+        type: 'success',
+        timeout: 1000,
+        text: 'Order updated',
+        progressBar: false,
+    }).show();
+})
