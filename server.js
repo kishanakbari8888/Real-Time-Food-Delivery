@@ -12,7 +12,7 @@ const Emitter = require('events');
 
 // ----------------------------------------------------------------------------------------------------
 mongoose.set("strictQuery", false);
-DB_URL = "mongodb+srv://nodedemo:nodedemo@nodecazzy.zasfn3a.mongodb.net/Pizza?retryWrites=true&w=majority"
+DB_URL = "" //add URL
 const app = express();
 
 // ----------------------------------------------------------------------------------------------------
@@ -38,7 +38,6 @@ app.set('views', __dirname+'/resources/views');
 app.set('view engine','ejs');
 const eventEmitter = new Emitter();
 app.set('eventEmitter',eventEmitter);
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 const passportInit = require('./app/config/passport')
 passportInit(passport)
@@ -46,7 +45,6 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 app.use((req,res,next)=>{
     // console.log(req.session);
     res.locals.session = req.session;
@@ -55,9 +53,6 @@ app.use((req,res,next)=>{
     res.locals.user = req.user;
     next();
 })
-
-// ----------------------------------------------------------------------------------------------------
-
 
 allroutes(app);
 
